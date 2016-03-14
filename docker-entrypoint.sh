@@ -40,6 +40,12 @@ if [ "$1" = 'rabbitmq-server' ]; then
 		ssl_ca_file
 		ssl_cert_file
 		ssl_key_file
+		set_vm_memory_high_watermark
+		vm_memory_high_watermark_paging_ratio
+		disk_free_limit
+		tcp_listen_options
+		kernel
+		cluster_partition_handling
 	)
 
 	haveConfig=
@@ -82,9 +88,16 @@ if [ "$1" = 'rabbitmq-server' ]; then
 			var="RABBITMQ_${conf^^}"
 			val="${!var}"
 			[ "$val" ] || continue
-			cat >> /etc/rabbitmq/rabbitmq.config <<-EOC
-			      {$conf, <<"$val">>},
-			EOC
+			if [ "${conf#default_}" = "$conf" ]; then
+				# Pass argument directly as it's formatting is unknown
+				cat >> /etc/rabbitmq/rabbitmq.config <<-EOC
+				      {$conf, $val},
+				EOC
+			else
+				cat >> /etc/rabbitmq/rabbitmq.config <<-EOC
+				      {$conf, <<"$val">>},
+				EOC
+			fi
 		done
 		cat >> /etc/rabbitmq/rabbitmq.config <<-'EOF'
 			      {loopback_users, []}
